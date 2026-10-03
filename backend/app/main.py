@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
-from app.api import health
+from app.api import health, tasks
 from app.core.config import get_settings
 from app.core.logging import configure_logging, get_logger
 from app.core.middleware import RequestContextMiddleware
@@ -60,6 +60,7 @@ def create_app() -> FastAPI:
     app.add_middleware(RequestContextMiddleware)
 
     app.include_router(health.router)
+    app.include_router(tasks.router)
 
     FastAPIInstrumentor.instrument_app(app)
 

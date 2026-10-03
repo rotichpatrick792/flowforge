@@ -5,10 +5,11 @@ import sys
 from logging.config import fileConfig
 from pathlib import Path
 
-from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
+
+from alembic import context
 
 # --- Make `app.*` importable when Alembic runs from the project root ---
 BACKEND_DIR = Path(__file__).resolve().parents[1]
@@ -16,12 +17,11 @@ if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
 # --- Import our settings and models ---
-from app.core.config import get_settings  # noqa: E402
-from app.db.base import Base  # noqa: E402
-
 # Importing models registers them with `Base.metadata`. Without this import,
 # autogenerate would produce empty migrations.
 from app import models  # noqa: E402, F401
+from app.core.config import get_settings  # noqa: E402
+from app.db.base import Base  # noqa: E402
 
 # --- Standard Alembic setup ---
 config = context.config
