@@ -17,6 +17,9 @@ dependencies = [
     "opentelemetry-sdk==1.27.0",
     "opentelemetry-instrumentation-fastapi==0.48b0",
     "prometheus-client==0.21.0",
+    "sqlalchemy[asyncio]==2.0.35",
+    "asyncpg==0.29.0",
+    "alembic==1.13.3",
 ]
 
 [project.optional-dependencies]
