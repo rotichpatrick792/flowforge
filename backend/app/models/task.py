@@ -32,7 +32,12 @@ class Task(Base, TimestampMixin):
     )
     type: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
     status: Mapped[TaskStatus] = mapped_column(
-        Enum(TaskStatus, name="task_status", native_enum=True),
+        Enum(
+            TaskStatus,
+            name="task_status",
+            native_enum=True,
+            values_callable=lambda enum_cls: [member.value for member in enum_cls],
+        ),
         default=TaskStatus.PENDING,
         nullable=False,
         index=True,
