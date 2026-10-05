@@ -40,6 +40,12 @@ async def create_task(
     service = TaskService(session)
     task = await service.create(data)
 
+    # Commit BEFORE enqueueing so the worker can always find the task.
+    # Otherwise the worker races with our transaction commit and may
+    # see "task not found" for a task that's about to be committed.
+    # See ADR 0004 for the failure modes and the reconciliation plan.
+    await session.commit()
+
     queue = TaskQueue()
     await queue.enqueue(
         task_id=task.id,
