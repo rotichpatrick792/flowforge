@@ -1,5 +1,6 @@
 """Task business logic. No HTTP, no FastAPI — just operations on the DB."""
 
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import func, select
@@ -23,7 +24,7 @@ class TaskService:
             status=TaskStatus.PENDING,
         )
         self.session.add(task)
-        await self.session.flush()  # assign server-generated values (id, timestamps)
+        await self.session.flush()
         await self.session.refresh(task)
         return task
 
@@ -56,3 +57,63 @@ class TaskService:
         total = total_result.scalar_one()
 
         return items, total
+
+    async def mark_running(self, task_id: UUID) -> Task | None:
+        """Transition a task to `running` and bump its attempt counter.
+
+        Raises ValueError if the task is not currently pending. This is the
+        state machine guard — illegal transitions (e.g. completing an
+        already-completed task) are rejected at the service layer.
+        """
+        task = await self.get(task_id)
+        if task is None:
+            return None
+        if task.status != TaskStatus.PENDING:
+            raise ValueError(
+                f"Cannot mark task {task_id} running: " f"current status is {task.status.value}"
+            )
+        task.status = TaskStatus.RUNNING
+        task.attempts += 1
+        await self.session.flush()
+        await self.session.refresh(task)
+        return task
+
+    async def mark_completed(
+        self,
+        task_id: UUID,
+        result: dict[str, Any],
+    ) -> Task | None:
+        """Transition a task to `completed` and store its result.
+
+        Raises ValueError if the task is not currently running.
+        """
+        task = await self.get(task_id)
+        if task is None:
+            return None
+        if task.status != TaskStatus.RUNNING:
+            raise ValueError(
+                f"Cannot complete task {task_id}: " f"current status is {task.status.value}"
+            )
+        task.status = TaskStatus.COMPLETED
+        task.result = result
+        await self.session.flush()
+        await self.session.refresh(task)
+        return task
+
+    async def mark_failed(self, task_id: UUID, error: str) -> Task | None:
+        """Transition a task to `failed` and store its error message.
+
+        Raises ValueError if the task is not currently running.
+        """
+        task = await self.get(task_id)
+        if task is None:
+            return None
+        if task.status != TaskStatus.RUNNING:
+            raise ValueError(
+                f"Cannot fail task {task_id}: " f"current status is {task.status.value}"
+            )
+        task.status = TaskStatus.FAILED
+        task.error = error
+        await self.session.flush()
+        await self.session.refresh(task)
+        return task
