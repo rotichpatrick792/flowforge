@@ -49,9 +49,7 @@ class Task(Base, TimestampMixin):
     max_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=3)
     run_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
-    __table_args__ = (
-        Index("ix_tasks_status_created_at", "status", "created_at"),
-    )
+    __table_args__ = (Index("ix_tasks_status_created_at", "status", "created_at"),)
 
     def __repr__(self) -> str:
         return f"<Task id={self.id} type={self.type!r} status={self.status.value!r}>"

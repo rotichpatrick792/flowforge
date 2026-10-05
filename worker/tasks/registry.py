@@ -53,6 +53,7 @@ async def sleep(payload: dict[str, Any]) -> dict[str, Any]:
     await asyncio.sleep(seconds)
     return {"slept": seconds}
 
+
 TASK_REGISTRY: dict[str, TaskHandler] = {
     "echo": echo,
     "add": add,

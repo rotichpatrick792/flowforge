@@ -1,4 +1,5 @@
 """FlowForge API entrypoint."""
+
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
@@ -29,6 +30,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     finally:
         await dispose_engine()
         log.info("app_shutdown")
+
 
 def create_app() -> FastAPI:
     """Application factory.
