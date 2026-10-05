@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
 from app.models.task import TaskStatus
 from app.schemas.task import TaskCreate, TaskListResponse, TaskRead
+from app.services.queue import TaskQueue
 from app.services.task_service import TaskService
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
@@ -26,9 +27,26 @@ async def create_task(
     data: TaskCreate,
     session: DbSession,
 ) -> TaskRead:
-    """Accept a task, persist it as `pending`, return it."""
+    """Accept a task, persist it as `pending`, enqueue it, and return it.
+
+    Both the DB insert and the queue publish must succeed. If the queue
+    publish fails, the DB transaction is rolled back by the `get_db`
+    dependency (it rolls back on exception), and the client sees a 5xx.
+
+    This is a deliberate choice for Phase 3: consistency over availability.
+    Phase 4 will add a reconciliation sweep so we can relax the DB write
+    to best-effort and rely on the sweep to re-enqueue orphans.
+    """
     service = TaskService(session)
     task = await service.create(data)
+
+    queue = TaskQueue()
+    await queue.enqueue(
+        task_id=task.id,
+        type=task.type,
+        payload=task.payload,
+    )
+
     return TaskRead.model_validate(task)
 
 
